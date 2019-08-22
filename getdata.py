@@ -18,12 +18,12 @@ url ='https://ws.sandbox.training.gov.au/Deewr.Tga.Webservices/TrainingComponent
 orgurl='https://ws.sandbox.training.gov.au/Deewr.Tga.Webservices/OrganisationService.svc?wsdl'
 
 ####################################################
-username='INSERT YOUR USERNAME HERE'
-password='AND YOUR PASSWORD HERE'
+username='WebService.Read'
+password='Asdf098'
 ####################################################
 
 xmlbaseurl='http://training.gov.au/TrainingComponentFiles/'
-xmlfolder="itemxml"
+xmlfolder= os.path.expanduser("~/Dropbox/_today/ntisthis/itemxml")
 
 client = suds.client.Client(url)
 #print client
@@ -67,13 +67,19 @@ def get_xml(codetoget):
 						#print fyle.RelativePath
 						fname = fyle.RelativePath.strip()
 						fname = fname.lower()
-						#sys.stderr.write("\nfile: (%s)" % (fname))        
+						sys.stderr.write("\nfile: (%s)" % (fname))
 						if fname[-4:]==".xml":
-							strFile=fyle.RelativePath
+							strFile=fyle.RelativePath.replace("\\","/")
+							strFileURL=fyle.RelativePath
+							sys.stderr.write(strFile + '\n')
 							xmlfilename = strFile
+							prelude=fyle.RelativePath.split('\\',1)
+							if os.path.exists(os.path.join(xmlfolder,prelude[0]))==False:
+							    os.mkdir(os.path.join(xmlfolder,prelude[0]))
+							#sys.stderr.write(os.getcwd() + '\n');
 							if os.path.exists(os.path.join(xmlfolder, strFile))==False:
-								sys.stderr.write('downloading ' + strFile + '\n')
-								urllib.urlretrieve(xmlbaseurl + urllib.quote(strFile), os.path.join(xmlfolder, strFile))
+								sys.stderr.write('downloading ' + strFileURL + ' to ' + os.path.join(xmlfolder, strFile) + '\n')
+								urllib.urlretrieve(xmlbaseurl + urllib.quote(strFileURL), os.path.join(xmlfolder, strFile))
 								shutil.copyfile(os.path.join(xmlfolder, strFile), os.path.join('newfiles', strFile))
 								return xmlfilename
 							else: # file already there
@@ -94,7 +100,7 @@ def get_xml(codetoget):
 TrainingComponentTypeFilter=client.factory.create('TrainingComponentTypeFilter')
 TrainingComponentTypeFilter.IncludeTrainingPackage=True
 TrainingComponentSearchRequest=client.factory.create('TrainingComponentSearchRequest')
-TrainingComponentSearchRequest.Filter='Training and Education'    #eg Filter='Animal Care and Management' ie training package name or '' for all
+TrainingComponentSearchRequest.Filter=''    #eg Filter='Animal Care and Management' ie training package name or '' for all
 TrainingComponentSearchRequest.IncludeDeleted=False
 TrainingComponentSearchRequest.SearchTitle=True
 TrainingComponentSearchRequest.SearchCode=False
@@ -108,3 +114,4 @@ try:
 
 except WebFault, e:
    print "soap request failed:", e
+
