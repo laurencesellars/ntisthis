@@ -1,7 +1,7 @@
 import suds
 from suds.client import Client
 from suds.wsse import *
-import urllib
+import urllib2
 import re
 import unicodedata
 import shutil
@@ -23,7 +23,7 @@ password='Asdf098'
 ####################################################
 
 xmlbaseurl='http://training.gov.au/TrainingComponentFiles/'
-xmlfolder= os.path.expanduser("~/Dropbox/_today/ntisthis/itemxml")
+xmlfolder=os.path.join(os.getcwd(),"itemxml")
 
 client = suds.client.Client(url)
 #print client
@@ -67,28 +67,55 @@ def get_xml(codetoget):
 						#print fyle.RelativePath
 						fname = fyle.RelativePath.strip()
 						fname = fname.lower()
-						sys.stderr.write("\nfile: (%s)" % (fname))
+						#sys.stderr.write("\nfile: (%s)" % (fname))
 						if fname[-4:]==".xml":
-							strFile=fyle.RelativePath.replace("\\","/")
-							strFileURL=fyle.RelativePath
-							sys.stderr.write(strFile + '\n')
+							if os.sep == "/":
+								strFile=fyle.RelativePath.replace("\\","/")
+							else:
+								strFile=fyle.RelativePath
+							fullFilePath=os.path.join(xmlfolder, strFile)
 							xmlfilename = strFile
-							prelude=fyle.RelativePath.split('\\',1)
-							if os.path.exists(os.path.join(xmlfolder,prelude[0]))==False:
-							    os.mkdir(os.path.join(xmlfolder,prelude[0]))
-							#sys.stderr.write(os.getcwd() + '\n');
 							if os.path.exists(os.path.join(xmlfolder, strFile))==False:
-								sys.stderr.write('downloading ' + strFileURL + ' to ' + os.path.join(xmlfolder, strFile) + '\n')
-								urllib.urlretrieve(xmlbaseurl + urllib.quote(strFileURL), os.path.join(xmlfolder, strFile))
-								shutil.copyfile(os.path.join(xmlfolder, strFile), os.path.join('newfiles', strFile))
+								sys.stderr.write('downloading ' + strFile + '\n')
+								try:
+									print('downloading from ' + xmlbaseurl + urllib2.quote(strFile) + ' to ' +  fullFilePath)
+									resp = urllib2.urlopen(xmlbaseurl + urllib2.quote(strFile))
+								except (urllib2.URLError, urllib2.HTTPError) as e:
+									print 'error:', e
+								except IOError,e:
+									print "Unexpected io error :", e
+								except:
+									print "leftover exception";
+								try:
+									print 'Downloading to ' + os.path.join(xmlfolder, strFile)
+									if not os.path.exists(os.path.dirname(fullFilePath)):
+										try:
+											os.makedirs(os.path.dirname(fullFilePath))
+										except:
+											print 'oops'
+									with open(fullFilePath, 'w+b') as f:
+										f.write(resp.read())
+									#shutil.copyfile(fullFilePath), os.path.join('newfiles', strFile))
+								except TypeError, e:
+									print "Unexpected error 55:", e
 								return xmlfilename
 							else: # file already there
 								return xmlfilename
 						# if you didn't find an xml file just return an empty string
 					return ''
+				except NameError,e:
+					print e
+				except TypeError,e:
+					print e
+				except IOError,e:
+					print 'error ',e
 				except:
+					print "Unexpected error 1:", sys.exc_info()[0]
 					return ''
+		except TypeError,e:
+			print 'error: ' + e
 		except:
+			print "Unexpected error 12:", sys.exc_info()[0]
 			return ''
 	except WebFault, e:
 		sys.stderr.write("soap request failed: " + e)
@@ -114,4 +141,3 @@ try:
 
 except WebFault, e:
    print "soap request failed:", e
-
